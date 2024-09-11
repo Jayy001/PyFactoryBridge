@@ -21,7 +21,11 @@ Direct 1:1 implementation to the offical documentation. *Most* API endpoints sup
 from pyfactorybridge import API
 from pyfactorybridge.exceptions import SaveGameFailed
 
-satisfactory = API(address="XXXX:7777", password="XXXX")
+# Authenticate with the password... (not recommended)
+# satisfactory = API(address="XXXX:7777", password="XXXX")
+
+# Or with the token...
+satisfactory = API(address="XXXX:7777", token="XXXX")
 
 try:
     satisfactory.save_game(SaveName="Test")
