@@ -16,7 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class API:
-    def __init__(self, address, password=None):
+    def __init__(self, address, password=None, token=None):
         self.URL = f"https://{address}/api/v1/"
         self.auth = None
 
@@ -25,8 +25,12 @@ class API:
         ):  # Also checks if the server is reachable
             logging.error("Server is slow to respond 🐌")
 
-        if password:
-            self.auth = self.authorise(password)
+        if token:
+            logging.info("API token provided.")
+            self.auth = self.authorise_api_token(token)
+        elif password:
+            logging.warning("Password provided instead of API token.")
+            self.auth = self.authorise_password(password)
         else:
             logging.error("No password provided, some functions may not work.")
 
@@ -60,7 +64,7 @@ class API:
         except requests.exceptions.Timeout:
             raise ServerError("The server could not be reached")
 
-    def authorise(self, Password) -> BearerAuth | None:
+    def authorise_password(self, Password) -> BearerAuth | None:
         response_data = self.__request(
             function="PasswordLogin",
             properties={"password": Password, "minimumPrivilegeLevel": "Administrator"},
@@ -68,6 +72,9 @@ class API:
 
         if (token := response_data.get("authenticationToken")) is not None:
             return BearerAuth(token)
+
+    def authorise_api_token(self, Token) -> BearerAuth:
+        return BearerAuth(Token)
 
     ### Methods ###
 
