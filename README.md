@@ -1,5 +1,5 @@
 <p align="center">
-<img src="assets/logo.gif">
+<img src="assets/icon.png">
 
 <p align="center">➡️ <a href="methods.md">Method References</a> ⬅️</p>
 
