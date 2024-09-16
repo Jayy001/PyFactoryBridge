@@ -38,7 +38,7 @@ class API:
 
     def __build_request_data(
         self, function: str, properties: dict | None = None
-    ) -> None:
+    ) -> dict:
         request_data = {"data": {"clientCustomData": ""}, "function": function}
         if isinstance(properties, dict):
             for property_name, property_value in properties.items():
