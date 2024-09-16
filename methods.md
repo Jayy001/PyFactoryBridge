@@ -100,7 +100,7 @@ Possible errors:
 
 | Error Code       | Description                                                                |
 | ---------------- | -------------------------------------------------------------------------- |
-| server_claimed   | Server has already been claimed                                            |
+| ServerClaimed   | Server has already been claimed                                            |
 
 ### RenameServer
 
@@ -117,7 +117,7 @@ Possible errors:
 
 | Error Code         | Description                                                                |
 | ------------------ | -------------------------------------------------------------------------- |
-| server_not_claimed | Server has not been claimed yet. Use ClaimServer function instead          |
+| ServerNotClaimed | Server has not been claimed yet. Use ClaimServer function instead          |
 
 ### SetClientPassword
 
@@ -135,8 +135,8 @@ Possible errors:
 
 | Error Code         | Description                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------- |
-| server_not_claimed | Server has not been claimed yet. Use ClaimServer function instead before calling SetClientPassword |
-| password_in_use    | Same password is already used as Admin Password                                                    |
+| ServerNotClaimed | Server has not been claimed yet. Use ClaimServer function instead before calling SetClientPassword |
+| PasswordInUse    | Same password is already used as Admin Password                                                    |
 
 ### SetAdminPassword
 
@@ -154,9 +154,9 @@ Possible errors:
 
 | Error Code                  | Description                                                                                        |
 | --------------------------- | -------------------------------------------------------------------------------------------------- |
-| server_not_claimed          | Server has not been claimed yet. Use ClaimServer function instead                                  |
-| cannot_reset_admin_password | Attempt to set Password to empty string. Admin Password cannot be reset                            |
-| password_in_use             | Same password is already used as Client Protection Password                                        |
+| ServerNotClaimed          | Server has not been claimed yet. Use ClaimServer function instead                                  |
+| CannotResetAdminPassword | Attempt to set Password to empty string. Admin Password cannot be reset                            |
+| PasswordInUse             | Same password is already used as Client Protection Password                                        |
 
 ### SetAutoLoadSessionName
 
@@ -238,7 +238,7 @@ Possible errors:
 
 | Error Code         | Description                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------- |
-| save_game_failed   | Failed to save the game. Additional information might be availble in errorMessage property         |
+| SaveGameFailed   | Failed to save the game. Additional information might be availble in errorMessage property         |
 
 ### DeleteSaveFile
 
@@ -255,7 +255,7 @@ Possible errors:
 
 | Error Code              | Description                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------- |
-| delete_save_file_failed | Failed to delete the save game file. Additional information might be available in errorMessage property |
+| DeleteSaveFileFailed | Failed to delete the save game file. Additional information might be available in errorMessage property |
 
 ### DeleteSaveSession
 
@@ -273,8 +273,8 @@ Possible errors:
 
 | Error Code                 | Description                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| session_not_found          | Failed to find any save game files belonging to the given session                                       |
-| delete_save_session_failed | Failed to delete save session files. Additional information might be available in errorMessage property |
+| SessionNotFound          | Failed to find any save game files belonging to the given session                                       |
+| DeleteSaveSessionFile | Failed to delete save session files. Additional information might be available in errorMessage property |
 
 ### EnumerateSessions
 
@@ -291,7 +291,7 @@ Possible errors:
 
 | Error Code                 | Description                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| enumerate_sessions_failed  | Failed to enumerate save sessions. Additional information might be available in errorMessage property   |
+| EnumerateSessionsFailed  | Failed to enumerate save sessions. Additional information might be available in errorMessage property   |
 
 SessionSaveStruct:
 
@@ -333,7 +333,7 @@ Possible errors:
 
 | Error Code                 | Description                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| save_game_load_failed      | Failed to find the save game file with the given name on the Dedicated Server                           |
+| SaveGameLoadFailed      | Failed to find the save game file with the given name on the Dedicated Server                           |
 
 ### UploadSaveGame
 
@@ -360,10 +360,10 @@ Possible errors:
 
 | Error Code                 | Description                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| invalid_save_game          | Invalid save game file encoding, malformed header or corrupted contents                                 |
-| unsupported_save_game      | Save game file is too old to be loaded by the Dedicated Server, or is too new                           |
-| file_save_failed           | Failed to save the save game file to the underlying file system                                         |
-| save_game_load_failed      | Failed to find the created save game file                                                               |
+| InvalidSaveGame          | Invalid save game file encoding, malformed header or corrupted contents                                 |
+| UnsupportedSaveGame      | Save game file is too old to be loaded by the Dedicated Server, or is too new                           |
+| FileSaveFailed           | Failed to save the save game file to the underlying file system                                         |
+| SaveGameLoadFailed      | Failed to find the created save game file                                                               |
 
 ### DownloadSaveGame
 
@@ -380,4 +380,4 @@ Possible errors:
 
 | Error Code                 | Description                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| file_not_found             | Save game file with the provided name is not found on the Dedicated Server                              |
+| FileNotFound             | Save game file with the provided name is not found on the Dedicated Server                              |
