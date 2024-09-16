@@ -1,3 +1,4 @@
 **/.*.py
 pyfactorybridge/testing.py
 .vscode
+*.pyc
