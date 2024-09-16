@@ -1,2 +1,2 @@
 # Special 💖 thanks to
-@janerjak - Upload function and general cleanup of request
+[@janerjak](https://www.github.com/janerjak) - Upload function and general cleanup of request
