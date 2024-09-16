@@ -36,14 +36,21 @@ class API:
         else:
             logging.error("No password provided, some functions may not work.")
 
-    def __build_request_data(self, function: str, properties: dict | None = None) -> None:
+    def __build_request_data(
+        self, function: str, properties: dict | None = None
+    ) -> dict:
         request_data = {"data": {"clientCustomData": ""}, "function": function}
         if isinstance(properties, dict):
             for property_name, property_value in properties.items():
                 request_data["data"][property_name] = property_value
         return request_data
 
-    def __request(self, function: str, properties: dict | None = None, multiparts: dict | None = None) -> dict[Any]:
+    def __request(
+        self,
+        function: str,
+        properties: dict | None = None,
+        multiparts: dict | None = None,
+    ) -> dict[Any]:
         request_data = self.__build_request_data(function, properties)
 
         http_method_kwargs = {}
@@ -69,10 +76,7 @@ class API:
 
         try:
             response_data = requests.post(
-                self.URL,
-                verify=False,
-                auth=self.auth,
-                **http_method_kwargs
+                self.URL, verify=False, auth=self.auth, **http_method_kwargs
             )
 
             if response_data.text:
@@ -194,12 +198,12 @@ class API:
         )
 
     def upload_save_game(
-            self,
-            save_file_path: str,
-            SaveName: str | None = None,
-            LoadSaveGame: bool = False,
-            EnableAdvancedGameSettings: bool = False,
-        ) -> dict[str, str]:
+        self,
+        save_file_path: str,
+        SaveName: str | None = None,
+        LoadSaveGame: bool = False,
+        EnableAdvancedGameSettings: bool = False,
+    ) -> dict[str, str]:
         with open(save_file_path, "rb") as save_file_handle:
             save_file_path_obj = Path(save_file_path)
             multiparts = {
@@ -215,7 +219,8 @@ class API:
             return self.__request(
                 function="UploadSaveGame",
                 properties={
-                    "SaveName": SaveName or save_file_path_obj.stem, # Save file name without file extension
+                    "SaveName": SaveName
+                    or save_file_path_obj.stem,  # Save file name without file extension
                     "LoadSaveGame": LoadSaveGame,
                     "EnableAdvancedGameSettings": EnableAdvancedGameSettings,
                 },
