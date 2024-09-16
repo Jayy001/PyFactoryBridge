@@ -71,7 +71,7 @@ class API:
             response_data = requests.post(
                 self.URL,
                 verify=False,
-                auth=self.auth or None,
+                auth=self.auth,
                 **http_method_kwargs
             )
 
