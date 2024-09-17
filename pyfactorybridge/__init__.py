@@ -1,26 +1,33 @@
-import requests
 import logging
 from json import dumps
 from pathlib import Path
+from requests import Session, exceptions
+from typing_extensions import Any
 
 from pyfactorybridge.exceptions import ServerExceptions, ServerError
 from pyfactorybridge.authentication import BearerAuth
 
-from typing_extensions import Any
-
 #### SSL VERIFICATION ####
-
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+from pyfactorybridge.ssl_adapter import FactoryGameSSLAdapter
 ##########################
 
 
 class API:
-    def __init__(self, address, password=None, token=None):
+    def __init__(
+        self,
+        address: str,
+        password: str | None = None,
+        token: str | None = None,
+        verify_ssl_chain_path: str | None = None,
+    ):
         self.URL = f"https://{address}/api/v1/"
         self.auth = None
+
+        self.session = Session()
 
         if (
             self.get_server_health()["health"] == "slow"
@@ -35,6 +42,10 @@ class API:
             self.auth = self.authorise_password(password)
         else:
             logging.error("No password provided, some functions may not work.")
+
+        if verify_ssl_chain_path is not None:
+            ssl_http_adapter = FactoryGameSSLAdapter(verify_ssl_chain_path)
+            self.session.mount("https://", ssl_http_adapter)
 
     def __build_request_data(
         self, function: str, properties: dict | None = None
@@ -75,7 +86,7 @@ class API:
             }
 
         try:
-            response_data = requests.post(
+            response_data = self.session.post(
                 self.URL, verify=False, auth=self.auth, **http_method_kwargs
             )
 
@@ -91,7 +102,7 @@ class API:
 
             return response_data["data"]
 
-        except requests.exceptions.Timeout:
+        except exceptions.Timeout:
             raise ServerError("The server could not be reached")
 
     def authorise_password(self, Password) -> BearerAuth | None:
