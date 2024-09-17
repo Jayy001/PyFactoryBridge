@@ -167,7 +167,7 @@ class API:
             },
         )
 
-        if (token := response_data.get("authenticationToken")):
+        if token := response_data.get("authenticationToken"):
             return BearerAuth(token)
 
     def __auth_from_passwordless(self) -> BearerAuth | None:
@@ -176,7 +176,7 @@ class API:
             properties={"minimumPrivilegeLevel": "InitialAdmin"},
         )
 
-        if (token := response_data.get("authenticationToken")):
+        if token := response_data.get("authenticationToken"):
             return BearerAuth(token)
 
     def __auth_from_api_token(self, Token) -> BearerAuth:
