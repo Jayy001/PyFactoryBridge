@@ -167,7 +167,7 @@ class API:
             },
         )
 
-        if (token := response_data.get("authenticationToken")) is not None:
+        if (token := response_data.get("authenticationToken")):
             return BearerAuth(token)
 
     def __auth_from_passwordless(self) -> BearerAuth | None:
@@ -176,7 +176,7 @@ class API:
             properties={"minimumPrivilegeLevel": "InitialAdmin"},
         )
 
-        if (token := response_data.get("authenticationToken")) is not None:
+        if (token := response_data.get("authenticationToken")):
             return BearerAuth(token)
 
     def __auth_from_api_token(self, Token) -> BearerAuth:
@@ -337,7 +337,7 @@ class API:
                     multiparts=multiparts,
                 )
         except (FileNotFoundError, PermissionError, OSError):
-            raise ServerError("Cannot read file path")
+            raise Exception(f"Cannot read path: {Path}")
 
     def download_save_game(self, SaveName: str, Path: str) -> None:
         """Downloads a save game from the server."""
@@ -349,7 +349,7 @@ class API:
                     )
                 )
         except (FileNotFoundError, PermissionError, OSError):
-            raise ServerError("Cannot write to file path")
+            raise Exception(f"Cannot write to file path: {Path}")
 
 
 def main():
