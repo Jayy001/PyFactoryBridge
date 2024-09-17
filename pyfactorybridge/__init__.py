@@ -18,7 +18,13 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class API:
-    def __init__(self, address, password=None, token=None):
+    def __init__(
+        self,
+        address: str,
+        password: str | None = None,
+        token: str | None = None,
+        enable_http_request_debugging: bool = False,
+    ):
         self.URL = f"https://{address}/api/v1/"
         self.auth = None
 
@@ -35,6 +41,19 @@ class API:
             self.auth = self.authorise_password(password)
         else:
             logging.error("No password provided, some functions may not work.")
+
+        if enable_http_request_debugging:
+            self.__enable_http_request_debugging()
+
+    def __enable_http_request_debugging(self):
+        import http.client as http_client
+
+        http_client.HTTPConnection.debuglevel = 1
+
+        logging.getLogger().setLevel(logging.DEBUG)
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
 
     def __build_request_data(
         self, function: str, properties: dict | None = None
