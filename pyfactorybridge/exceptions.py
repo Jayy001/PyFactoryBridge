@@ -57,6 +57,9 @@ class FileSavedFailed(Exception):
 class FileNotFound(Exception):
     pass
 
+class PasswordlessLoginNotPossible(Exception):
+    pass
+
 
 ServerExceptions = {
     "file_not_found": FileNotFound,
@@ -74,4 +77,5 @@ ServerExceptions = {
     "server_not_claimed": ServerNotClaimed,
     "server_claimed": ServerClaimed,
     "server_error": ServerError,
+    "passwordless_login_not_possible": PasswordlessLoginNotPossible,
 }

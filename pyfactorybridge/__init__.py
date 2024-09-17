@@ -23,6 +23,7 @@ class API:
         self,
         address: str,
         password: str | None = None,
+        minimum_privilege_level: str = "Administrator",
         token: str | None = None,
         verify_ssl_chain_path: str | None = None,
         enable_http_request_debugging: bool = False,
@@ -32,26 +33,28 @@ class API:
 
         self.session = Session()
 
-        if (
-            self.get_server_health()["health"] == "slow"
-        ):  # Also checks if the server is reachable
-            logging.error("Server is slow to respond 🐌")
-
-        if token:
-            logging.info("API token provided.")
-            self.auth = self.authorise_api_token(token)
-        elif password:
-            logging.warning("Password provided instead of API token.")
-            self.auth = self.authorise_password(password)
-        else:
-            logging.error("No password provided, some functions may not work.")
-
         if verify_ssl_chain_path:
             ssl_http_adapter = FactoryGameSSLAdapter(verify_ssl_chain_path)
             self.session.mount("https://", ssl_http_adapter)
 
         if enable_http_request_debugging:
             self.__enable_http_request_debugging()
+
+        if (
+            self.get_server_health()["health"] == "slow"
+        ):  # Also checks if the server is reachable
+            logging.error("Server is slow to respond 🐌")
+
+        if token:
+            self.renew_auth(
+                method="token", value=token, permissions=minimum_privilege_level
+            )
+        elif password:
+            self.renew_auth(
+                method="password", value=password, permissions=minimum_privilege_level
+            )
+        else:
+            self.renew_auth()
 
     def __enable_http_request_debugging(self):
         import http.client as http_client
@@ -77,15 +80,13 @@ class API:
         function: str,
         properties: dict | None = None,
         multiparts: dict | None = None,
-    ) -> dict[Any]:
+    ) -> Any:
         request_data = self.__build_request_data(function, properties)
-
         http_method_kwargs = {}
+
         if multiparts is None:
             # Simple application/json request
-            http_method_kwargs = {
-                "json": request_data,
-            }
+            http_method_kwargs["json"] = request_data
         else:
             # multipart/form-data request
             if "data" not in multiparts:
@@ -97,19 +98,17 @@ class API:
                     # Content-Type
                     "application/json",
                 )
-            http_method_kwargs = {
-                "files": multiparts,
-            }
+            http_method_kwargs["files"] = multiparts
 
         try:
             response_data = self.session.post(
                 self.URL, verify=False, auth=self.auth, **http_method_kwargs
             )
 
-            if response_data.text:
-                response_data = response_data.json()
-            else:
-                return {}
+            try:
+                return response_data.json()["data"]
+            except ValueError:
+                return response_data.content
 
             if error := response_data.get("errorCode"):
                 raise ServerExceptions.get(error, ServerError)(
@@ -121,54 +120,125 @@ class API:
         except (ConnectionError, Timeout):
             raise ServerError("The server could not be reached")
 
-    def authorise_password(self, Password) -> BearerAuth | None:
+    def renew_auth(
+        self,
+        method: str | None = None,
+        value: str | None = None,
+        permissions: str = "Administrator",
+    ):
+        """Renew the authentication token based on the provided method."""
+
+        if permissions not in [
+            "Administrator",
+            "Client",
+            "APIToken",
+            "NotAuthenticated",
+        ]:
+            raise ValueError("Invalid minimum privilege level provided.")
+
+        if method == "token":
+            logging.info("API token provided.")
+            self.auth = self.__auth_from_api_token(value)
+        elif method == "password":
+            logging.warning("Password provided instead of API token.")
+            self.auth = self.__auth_from_password(
+                value, MinimumPrivilegeLevel=permissions
+            )
+        else:
+            logging.error("No password provided, trying passwordless login.")
+            self.auth = self.__auth_from_passwordless()
+
+            if self.auth:
+                logging.info("Passwordless login successful. Please claim the server.")
+
+            else:
+                logging.error("Passwordless login failed. Using no authentication.")
+
+        logging.info(f"API initialized with auth token: {str(self.auth)}")
+
+    def __auth_from_password(
+        self, Password, MinimumPrivilegeLevel="Administrator"
+    ) -> BearerAuth | None:
         response_data = self.__request(
             function="PasswordLogin",
-            properties={"password": Password, "minimumPrivilegeLevel": "Administrator"},
+            properties={
+                "password": Password,
+                "minimumPrivilegeLevel": MinimumPrivilegeLevel,
+            },
         )
 
         if (token := response_data.get("authenticationToken")) is not None:
             return BearerAuth(token)
 
-    def authorise_api_token(self, Token) -> BearerAuth:
+    def __auth_from_passwordless(self) -> BearerAuth | None:
+        response_data = self.__request(
+            function="PasswordlessLogin",
+            properties={"minimumPrivilegeLevel": "InitialAdmin"},
+        )
+
+        if (token := response_data.get("authenticationToken")) is not None:
+            return BearerAuth(token)
+
+    def __auth_from_api_token(self, Token) -> BearerAuth:
         return BearerAuth(Token)
 
     ### Methods ###
 
     def get_server_health(self) -> dict[str, str]:
+        """Check the health of the server. Returns "healthy" if tick rate is above ten ticks per second, "slow" otherwise"""
         return self.__request(function="HealthCheck")
 
     def query_server_state(self) -> dict[str, str]:
+        """Query the current state of the server"""
         return self.__request(function="QueryServerState")
 
     def get_server_options(self) -> dict[str, str]:
+        """Get server options. Returns a dictionary of server options, pending server options and their values."""
         return self.__request(function="GetServerOptions")
 
     def get_advanced_game_settings(self) -> dict[str, str]:
+        """Get advanced game settings. Returns a dictionary of advanced game settings and if creative mode is enabled"""
         return self.__request(function="GetAdvancedGameSettings")
 
-    def apply_advanced_game_settings(self, SettingName, SettingValue) -> dict[str, str]:
+    def apply_advanced_game_settings(
+        self, SettingName: str, SettingValue: str
+    ) -> dict[str, str]:
+        """Applies advanced game setting. Doesn't return anything."""
         return self.__request(
             function="ApplyAdvancedGameSettings", properties={SettingName: SettingValue}
         )
 
-    def claim_server(self, ServerName, AdminPassword) -> dict[str, str]:
-        return self.__request(
+    def claim_server(self, ServerName: str, AdminPassword: str) -> str:
+        """Claims the server. Also reauthenticates the user."""
+        data = self.__request(
             function="ClaimServer",
             properties={"ServerName": ServerName, "AdminPassword": AdminPassword},
         )
 
-    def rename_server(self, ServerName) -> dict[str, str]:
+        self.renew_auth(
+            method="token",
+            value=data["authenticationToken"],
+            permissions="Administrator",
+        )
+
+        return data
+
+    def rename_server(self, ServerName: str) -> dict[str, str]:
+        """Renames the server"""
         return self.__request(
             function="RenameServer", properties={"ServerName": ServerName}
         )
 
-    def set_client_password(self, ClientPassword) -> dict[str, str]:
+    def set_client_password(self, ClientPassword: str) -> dict[str, str]:
+        """Sets the client password. Returns nothing."""
         return self.__request(
             function="SetClientPassword", properties={"Password": ClientPassword}
         )
 
-    def set_admin_password(self, AdminPassword, AuthenticationToken) -> dict[str, str]:
+    def set_admin_password(
+        self, AdminPassword: str, AuthenticationToken: str
+    ) -> dict[str, str]:
+        """Sets the admin password. Returns nothing."""
         return self.__request(
             function="SetAdminPassword",
             properties={
@@ -177,45 +247,56 @@ class API:
             },
         )
 
-    def set_auto_load_session_name(self, SessionName) -> dict[str, str]:
+    def set_auto_load_session_name(self, SessionName: str) -> dict[str, str]:
+        """Sets the auto load session name. Returns nothing."""
         return self.__request(
             function="SetAutoLoadSessionName", properties={"SessionName": SessionName}
         )
 
-    def run_command(self, Command) -> dict[str, str]:
+    def run_command(self, Command: str) -> dict[str, str]:
         return self.__request(function="RunCommand", properties={"Command": Command})
 
     def shutdown(self) -> dict[str, str]:
+        """Shuts down the server."""
         return self.__request(function="Shutdown")
 
-    def apply_server_options(self, UpdatedServerOptions) -> dict[str, str]:
+    def apply_server_options(self, UpdatedServerOptions: dict) -> dict[str, str]:
+        """Applies server options. Requires a JSON string of options."""
         return self.__request(
             function="ApplyServerOptions",
             properties={"UpdatedServerOptions": UpdatedServerOptions},
         )
 
-    def create_new_game(self, NewGameData) -> dict[str, str]:
+    def create_new_game(self, NewGameData: str) -> dict[str, str]:
+        """Creates a new game."""
         return self.__request(
             function="CreateNewGame", properties={"NewGameData": NewGameData}
         )
 
-    def save_game(self, SaveName) -> dict[str, str]:
+    def save_game(self, SaveName: str) -> dict[str, str]:
+        """Saves the current game state."""
         return self.__request(function="SaveGame", properties={"SaveName": SaveName})
 
-    def delete_save_file(self, SaveName) -> dict[str, str]:
+    def delete_save_file(self, SaveName: str) -> dict[str, str]:
+        """Deletes a save file."""
         return self.__request(
             function="DeleteSaveFile", properties={"SaveName": SaveName}
         )
 
-    def deletion_save_session(self, SessionName) -> dict[str, str]:
+    def deletion_save_session(self, SessionName: str) -> dict[str, str]:
+        """Deletes a save session."""
         return self.__request(
             function="DeleteSaveSession", properties={"SessionName": SessionName}
         )
 
-    def enumerate_sessions(self) -> dict[str, str]:
+    def enumerate_sessions(self) -> dict[list[dict], int]:
+        """Enumerates all sessions on the server. Returns a list of session names."""
         return self.__request(function="EnumerateSessions")
 
-    def load_game(self, SaveName, EnableAdvancedGameSettings) -> dict[str, str]:
+    def load_game(
+        self, SaveName: str, EnableAdvancedGameSettings: bool
+    ) -> dict[str, str]:
+        """Loads a game from a save name."""
         return self.__request(
             function="LoadGame",
             properties={
@@ -231,31 +312,44 @@ class API:
         LoadSaveGame: bool = False,
         EnableAdvancedGameSettings: bool = False,
     ) -> dict[str, str]:
-        with open(save_file_path, "rb") as save_file_handle:
-            save_file_path_obj = Path(save_file_path)
-            multiparts = {
-                "saveGameFile": (
-                    # Save file basename (including .sav)
-                    save_file_path_obj.name,
-                    # Save file content
-                    save_file_handle.read(),
-                    # Content-Type
-                    "application/octet-stream",
+        """Uploads a save game file to the server. Requires the path to the save file."""
+        try:
+            with open(save_file_path, "rb") as save_file_handle:
+                save_file_path_obj = Path(save_file_path)
+                multiparts = {
+                    "saveGameFile": (
+                        # Save file basename (including .sav)
+                        save_file_path_obj.name,
+                        # Save file content
+                        save_file_handle.read(),
+                        # Content-Type
+                        "application/octet-stream",
+                    )
+                }
+                return self.__request(
+                    function="UploadSaveGame",
+                    properties={
+                        "SaveName": SaveName
+                        or save_file_path_obj.stem,  # Save file name without file extension
+                        "LoadSaveGame": LoadSaveGame,
+                        "EnableAdvancedGameSettings": EnableAdvancedGameSettings,
+                    },
+                    multiparts=multiparts,
                 )
-            }
-            return self.__request(
-                function="UploadSaveGame",
-                properties={
-                    "SaveName": SaveName
-                    or save_file_path_obj.stem,  # Save file name without file extension
-                    "LoadSaveGame": LoadSaveGame,
-                    "EnableAdvancedGameSettings": EnableAdvancedGameSettings,
-                },
-                multiparts=multiparts,
-            )
+        except (FileNotFoundError, PermissionError, OSError):
+            raise ServerError("Cannot read file path")
 
-    def download_save_game(self, SaveName) -> None:
-        raise NotImplementedError
+    def download_save_game(self, SaveName: str, Path: str) -> None:
+        """Downloads a save game from the server."""
+        try:
+            with open(Path, "wb") as save:
+                save.write(
+                    self.__request(
+                        function="DownloadSaveGame", properties={"SaveName": SaveName}
+                    )
+                )
+        except (FileNotFoundError, PermissionError, OSError):
+            raise ServerError("Cannot write to file path")
 
 
 def main():
