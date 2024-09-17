@@ -1,16 +1,18 @@
 import logging
 from json import dumps
 from pathlib import Path
-from requests import Session, exceptions
+from requests import Session
+from requests.exceptions import ConnectionError, Timeout
 from typing_extensions import Any
 
 from pyfactorybridge.exceptions import ServerExceptions, ServerError
 from pyfactorybridge.authentication import BearerAuth
 
 #### SSL VERIFICATION ####
-import urllib3
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+disable_warnings(InsecureRequestWarning)
 
 from pyfactorybridge.ssl_adapter import FactoryGameSSLAdapter
 ##########################
@@ -116,7 +118,7 @@ class API:
 
             return response_data["data"]
 
-        except exceptions.Timeout:
+        except (ConnectionError, Timeout):
             raise ServerError("The server could not be reached")
 
     def authorise_password(self, Password) -> BearerAuth | None:
