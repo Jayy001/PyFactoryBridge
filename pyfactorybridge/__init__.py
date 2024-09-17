@@ -337,19 +337,19 @@ class API:
                     multiparts=multiparts,
                 )
         except (FileNotFoundError, PermissionError, OSError):
-            raise Exception(f"Cannot read path: {Path}")
+            raise Exception(f"Cannot read path: {save_file_path}")
 
-    def download_save_game(self, SaveName: str, Path: str) -> None:
+    def download_save_game(self, SaveName: str, save_file_path: str) -> None:
         """Downloads a save game from the server."""
         try:
-            with open(Path, "wb") as save:
+            with open(save_file_path, "wb") as save:
                 save.write(
                     self.__request(
                         function="DownloadSaveGame", properties={"SaveName": SaveName}
                     )
                 )
         except (FileNotFoundError, PermissionError, OSError):
-            raise Exception(f"Cannot write to file path: {Path}")
+            raise Exception(f"Cannot write to file path: {save_file_path}")
 
 
 def main():
