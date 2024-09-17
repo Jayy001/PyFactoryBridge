@@ -46,7 +46,7 @@ class API:
         else:
             logging.error("No password provided, some functions may not work.")
 
-        if verify_ssl_chain_path is not None:
+        if verify_ssl_chain_path:
             ssl_http_adapter = FactoryGameSSLAdapter(verify_ssl_chain_path)
             self.session.mount("https://", ssl_http_adapter)
 
