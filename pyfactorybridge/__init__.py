@@ -23,6 +23,7 @@ class API:
         password: str | None = None,
         token: str | None = None,
         verify_ssl_chain_path: str | None = None,
+        enable_http_request_debugging: bool = False,
     ):
         self.URL = f"https://{address}/api/v1/"
         self.auth = None
@@ -46,6 +47,19 @@ class API:
         if verify_ssl_chain_path is not None:
             ssl_http_adapter = FactoryGameSSLAdapter(verify_ssl_chain_path)
             self.session.mount("https://", ssl_http_adapter)
+
+        if enable_http_request_debugging:
+            self.__enable_http_request_debugging()
+
+    def __enable_http_request_debugging(self):
+        import http.client as http_client
+
+        http_client.HTTPConnection.debuglevel = 1
+
+        logging.getLogger().setLevel(logging.DEBUG)
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
 
     def __build_request_data(
         self, function: str, properties: dict | None = None
