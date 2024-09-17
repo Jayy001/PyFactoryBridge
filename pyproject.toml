@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyfactorybridge"
-version = "1.0.0"
+version = "1.0.1"
 description = "Wrapper around the Satisfactory Dedicated Server HTTP API"
 authors = ["Jayy001 <github@skii.dev>"]
 license = "MIT"
