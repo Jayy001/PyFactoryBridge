@@ -5,6 +5,7 @@ from requests import Session
 from requests.exceptions import ConnectionError, Timeout
 from typing_extensions import Any
 
+from pyfactorybridge import exceptions
 from pyfactorybridge.exceptions import ServerExceptions, ServerError
 from pyfactorybridge.authentication import BearerAuth
 
@@ -23,7 +24,7 @@ class API:
         self,
         address: str,
         password: str | None = None,
-        minimum_privilege_level: str = "Administrator",
+        privilege_level: str = "Administrator",
         token: str | None = None,
         verify_ssl_chain_path: str | None = None,
         enable_http_request_debugging: bool = False,
@@ -47,11 +48,11 @@ class API:
 
         if token:
             self.renew_auth(
-                method="token", value=token, permissions=minimum_privilege_level
+                method="token", value=token, permissions=privilege_level
             )
         elif password:
             self.renew_auth(
-                method="password", value=password, permissions=minimum_privilege_level
+                method="password", value=password, permissions=privilege_level
             )
         else:
             self.renew_auth()
@@ -106,7 +107,7 @@ class API:
             )
 
             try:
-                return response_data.json()["data"]
+                response_data = response_data.json()
             except ValueError:
                 return response_data.content
 
@@ -171,13 +172,18 @@ class API:
             return BearerAuth(token)
 
     def __auth_from_passwordless(self) -> BearerAuth | None:
-        response_data = self.__request(
-            function="PasswordlessLogin",
-            properties={"minimumPrivilegeLevel": "InitialAdmin"},
-        )
+        try:
+            response_data = self.__request(
+                function="PasswordlessLogin",
+                properties={"minimumPrivilegeLevel": "InitialAdmin"},
+            )
 
-        if token := response_data.get("authenticationToken"):
-            return BearerAuth(token)
+            if token := response_data.get("authenticationToken"):
+                return BearerAuth(token)
+        except (exceptions.PasswordlessLoginNotPossible):
+            pass
+
+        return None
 
     def __auth_from_api_token(self, Token) -> BearerAuth:
         return BearerAuth(Token)
