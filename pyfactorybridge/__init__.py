@@ -155,7 +155,7 @@ class API:
             else:
                 logging.error("Passwordless login failed. Using no authentication.")
 
-        logging.info(f"API initialized with auth token: {self.auth}")
+        logging.info("API initialized")
 
     def __auth_from_password(
         self, Password, MinimumPrivilegeLevel="Administrator"
